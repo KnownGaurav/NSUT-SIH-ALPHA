@@ -18,10 +18,10 @@ A real-time, data-driven system for dynamically forecasting the Expected Time of
 ### Project Links
 
 - **GitHub Repository:**  
-  `____________________________________________`
+  https://github.com/shaileshsingh97112-crypto/NSUT-SIH-ALPHA
 
 - **Project PPT:**  
-  `____________________________________________`
+  https://docs.google.com/presentation/d/1X-YNE1KnFlItqe6yv6ZkTqFeRjB6KSE-/edit?slide=id.p1#slide=id.p1
 
 ---
 

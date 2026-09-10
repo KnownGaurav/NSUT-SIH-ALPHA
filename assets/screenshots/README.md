@@ -1,6 +1,17 @@
-# System UI Visual Asset Inventory & Component Walkthrough
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/eefb9d92-1588-4886-aa56-7cc5615854ff" /># System UI Visual Asset Inventory & Component Walkthrough
 
 This directory stores visual captures, operational screenshots, and UI mockups of the **Dynamic Rail ETA Forecasting Workstation** for SIH 2026 jury presentations and documentation.
+
+<img width="1913" height="992" alt="Screenshot 2026-09-11 003803" src="https://github.com/user-attachments/assets/f69d1291-e767-4d7e-af81-43a5954a1bee" />
+<img width="1885" height="958" alt="Screenshot 2026-09-11 003832" src="https://github.com/user-attachments/assets/4dc1ca14-3bf1-4ebc-bdda-56736b4297bf" />
+<img width="1885" height="958" alt="Screenshot 2026-09-11 003832" src="https://github.com/user-attachments/assets/59ccdfb4-a783-467e-a6c2-e6ef1ad86df9" />
+<img width="1899" height="985" alt="Screenshot 2026-09-11 003926" src="https://github.com/user-attachments/assets/4e0530ee-4642-4cf1-9445-4a5b787b0ebf" />
+<img width="1900" height="1000" alt="Screenshot 2026-09-11 003937" src="https://github.com/user-attachments/assets/9eaa775e-52de-4b80-bb09-f43b754ea3ed" />
+
+
+
+
+
 
 ---
 

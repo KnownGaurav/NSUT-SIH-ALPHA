@@ -1,0 +1,117 @@
+﻿# ==============================================================================
+# Docker Compose Specification for Indian Railways Dynamic ETA Platform
+# Orchestrates: frontend (Nginx), backend (FastAPI), postgres, redis
+# ==============================================================================
+
+version: "3.8"
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. PostgreSQL Database with PostGIS Geospatial Capability
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: railway_eta_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-railway_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-railway_secure_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-railway_eta_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-railway_user} -d ${POSTGRES_DB:-railway_eta_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - railway_network
+
+  # ----------------------------------------------------------------------------
+  # 2. Redis In-Memory Operational State & Event Cache
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: railway_eta_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - railway_network
+
+  # ----------------------------------------------------------------------------
+  # 3. FastAPI Dynamic ETA Engine & Prediction Backend
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: railway_eta_backend
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_PREFIX=/api
+      - DATA_PROVIDER=${DATA_PROVIDER:-simulation}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-railway_user}:${POSTGRES_PASSWORD:-railway_secure_pass}@postgres:5432/${POSTGRES_DB:-railway_eta_db}
+      - REDIS_URL=redis://redis:6379/0
+      - OPEN_METEO_API_URL=${OPEN_METEO_API_URL:-https://api.open-meteo.com/v1/forecast}
+      - CORS_ORIGINS=http://localhost,http://localhost:80,http://frontend,http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - railway_network
+
+  # ----------------------------------------------------------------------------
+  # 4. React Control Room & GIS Tracking Frontend (Nginx)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: railway_eta_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    networks:
+      - railway_network
+
+volumes:
+  postgres_data:
+    name: railway_eta_postgres_data
+  redis_data:
+    name: railway_eta_redis_data
+
+networks:
+  railway_network:
+    name: railway_eta_net
+    driver: bridge

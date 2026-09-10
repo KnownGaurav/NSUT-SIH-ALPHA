@@ -1,0 +1,137 @@
+{
+  "section_profiles": {
+    "ASN->HWH": {
+      "avg_delay": 8.9,
+      "delay_var": 43.09,
+      "avg_travel_time": 178.64,
+      "sample_count": 35
+    },
+    "BRC->MMCT": {
+      "avg_delay": 4.71,
+      "delay_var": 13.79,
+      "avg_travel_time": 284.88,
+      "sample_count": 35
+    },
+    "CNB->PRYJ": {
+      "avg_delay": 6.81,
+      "delay_var": 21.73,
+      "avg_travel_time": 120.81,
+      "sample_count": 70
+    },
+    "DDU->GAYA": {
+      "avg_delay": 10.98,
+      "delay_var": 33.52,
+      "avg_travel_time": 134.65,
+      "sample_count": 35
+    },
+    "DHN->ASN": {
+      "avg_delay": 8.38,
+      "delay_var": 45.14,
+      "avg_travel_time": 51.99,
+      "sample_count": 35
+    },
+    "GAYA->DHN": {
+      "avg_delay": 9.63,
+      "delay_var": 36.52,
+      "avg_travel_time": 160.37,
+      "sample_count": 35
+    },
+    "KOTA->BRC": {
+      "avg_delay": 4.15,
+      "delay_var": 11.81,
+      "avg_travel_time": 360.38,
+      "sample_count": 35
+    },
+    "NDLS->CNB": {
+      "avg_delay": 8.22,
+      "delay_var": 23.14,
+      "avg_travel_time": 265.75,
+      "sample_count": 70
+    },
+    "NDLS->KOTA": {
+      "avg_delay": 3.16,
+      "delay_var": 12.33,
+      "avg_travel_time": 275.53,
+      "sample_count": 35
+    },
+    "PRYJ->BSB": {
+      "avg_delay": 7.33,
+      "delay_var": 20.73,
+      "avg_travel_time": 109.63,
+      "sample_count": 35
+    },
+    "PRYJ->DDU": {
+      "avg_delay": 10.88,
+      "delay_var": 34.74,
+      "avg_travel_time": 63.69,
+      "sample_count": 35
+    }
+  },
+  "train_section_profiles": {
+    "12302::ASN->HWH": {
+      "train_avg_travel_time": 178.64,
+      "train_avg_delay": 8.9,
+      "performance_ratio": 1.0
+    },
+    "12302::CNB->PRYJ": {
+      "train_avg_travel_time": 126.04,
+      "train_avg_delay": 6.49,
+      "performance_ratio": 1.043
+    },
+    "12302::DDU->GAYA": {
+      "train_avg_travel_time": 134.65,
+      "train_avg_delay": 10.98,
+      "performance_ratio": 1.0
+    },
+    "12302::DHN->ASN": {
+      "train_avg_travel_time": 51.99,
+      "train_avg_delay": 8.38,
+      "performance_ratio": 1.0
+    },
+    "12302::GAYA->DHN": {
+      "train_avg_travel_time": 160.37,
+      "train_avg_delay": 9.63,
+      "performance_ratio": 1.0
+    },
+    "12302::NDLS->CNB": {
+      "train_avg_travel_time": 279.15,
+      "train_avg_delay": 7.78,
+      "performance_ratio": 1.05
+    },
+    "12302::PRYJ->DDU": {
+      "train_avg_travel_time": 63.69,
+      "train_avg_delay": 10.88,
+      "performance_ratio": 1.0
+    },
+    "12952::BRC->MMCT": {
+      "train_avg_travel_time": 284.88,
+      "train_avg_delay": 4.71,
+      "performance_ratio": 1.0
+    },
+    "12952::KOTA->BRC": {
+      "train_avg_travel_time": 360.38,
+      "train_avg_delay": 4.15,
+      "performance_ratio": 1.0
+    },
+    "12952::NDLS->KOTA": {
+      "train_avg_travel_time": 275.53,
+      "train_avg_delay": 3.16,
+      "performance_ratio": 1.0
+    },
+    "22436::CNB->PRYJ": {
+      "train_avg_travel_time": 115.58,
+      "train_avg_delay": 7.12,
+      "performance_ratio": 0.957
+    },
+    "22436::NDLS->CNB": {
+      "train_avg_travel_time": 252.36,
+      "train_avg_delay": 8.67,
+      "performance_ratio": 0.95
+    },
+    "22436::PRYJ->BSB": {
+      "train_avg_travel_time": 109.63,
+      "train_avg_delay": 7.33,
+      "performance_ratio": 1.0
+    }
+  }
+}

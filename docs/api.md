@@ -1,4 +1,4 @@
-﻿# PRODUCTION REST & WEBSOCKET API SPECIFICATION
+# PRODUCTION REST & WEBSOCKET API SPECIFICATION
 **Indian Railways Dynamic Train ETA Prediction Platform**  
 *SIH 2026 Problem Statement ID: 26028 &bull; Ministry of Railways*
 
@@ -68,6 +68,9 @@ Retrieve latest real-time GPS coordinates, speed, delay, block section, and acti
 Compute dynamic ML Expected Time of Arrival predictions for all upcoming stations using XGBoost regression, environmental weather context, and sectional headway congestion.
 - **Response**: `DynamicETAResponse`
 - **Fields**: `predicted_eta`, `predicted_delay_minutes`, `delta_vs_baseline_minutes`, `confidence` (statistical tolerance 0.0–1.0), `lower_bound`, `upper_bound`.
+- **Downstream Corridor Slack (Phase 21)**:
+  - `total_slack_minutes_remaining`: Total buffer available (dwell times + timetable sectional slack).
+  - `projected_recovery_minutes`: Machine-learning projected recovery before terminal destination.
 
 #### `GET /api/trains/{train_number}/eta/baseline`
 Compute deterministic baseline arrival forecast according to scheduled timetable running times plus current accumulated delay.
@@ -87,12 +90,13 @@ Central supervisory status across all active coaching trains on the network.
 - **Fields**: `total_active_trains`, `on_time_count`, `delayed_count`, `severe_delay_count`, `deteriorating_count`, `trains` roster.
 
 #### `GET /api/trains/analytics/model-performance`
-Empirical performance metrics comparing Baseline vs XGBoost ML ETA on chronologically held-out test runs, plus section-level running times, delay variance, and recovery tendencies.
+Empirical performance metrics comparing Baseline vs XGBoost ML ETA on chronologically held-out test runs, section-level profiles, and multi-day zonal performance aggregations.
 - **Response**: `ModelAnalyticsResponse`
+- **Zonal Performance (Phase 21)**: `zonal_breakdown` grouping railway zones (`NR`, `NCR`, `ECR`, `ER`, `WR`, `WCR`, etc.) with `average_delay_minutes`, `recovery_tendency_percent`, and zone-scaled `model_mae`.
 
 ---
 
-### 2.5 Stations & Environmental Weather
+### 2.5 Stations, Platform Operations & Environmental Weather
 #### `GET /api/stations`
 Retrieve all registered stations across Indian Railways corridors with geographical coordinates, zone, and state.
 - **Response**: `List[StationResponse]`
@@ -101,6 +105,12 @@ Retrieve all registered stations across Indian Railways corridors with geographi
 Retrieve specific station geographic details by code (e.g. `NDLS`, `CNB`, `HWH`).
 - **Response**: `StationResponse`
 - **Errors**: `404 Not Found`
+
+#### `GET /api/stations/{station_code}/arrivals` *(Phase 19 & 20)*
+Retrieve upcoming train movements, platform assignments, clearance conflicts, and cleaning turnaround readiness.
+- **Query Params**: `window_hours` (default: 4)
+- **Response**: `StationArrivalsResponse`
+- **Fields**: `assigned_platform`, `platform_conflict_flag`, `conflict_with_train`, `turnaround_impact` (`cleaning_depot_status`, `crew_handover_ready`), `current_status`.
 
 #### `GET /api/weather?latitude={lat}&longitude={lon}`
 Retrieve meteorological observations (temperature, rain, wind speed, visibility, severe flag) via Open-Meteo API with TTL cache.

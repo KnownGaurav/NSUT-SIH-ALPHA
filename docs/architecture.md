@@ -124,3 +124,35 @@ To respect data access boundaries without claiming internal live RTIS (Real-Time
 2. **Explainable Predictions**: Every dynamic ETA is paired with human-readable rationale (e.g., *"Section congestion at Mughalsarai junction (+14m); recoverability index: low"*).
 3. **No Fluff Design**: High data density, restrained neutral palette, operational clarity over ornamental animations.
 4. **Local Runnability**: Capable of booting entirely locally with embedded simulation fixtures for rapid development and testing.
+
+---
+
+## 5. Multi-Tier Operational Subsystems (Phases 19–21)
+
+To fully address the comprehensive scope of **SIH Problem Statement 26028**, the platform provides specialized interfaces catering to all major railway stakeholder groups:
+
+### 1. Station Operations & Platform Occupancy Supervision (`StationOperationsView.jsx`)
+- **Dynamic Platform Allocation**: Deterministically projects arriving and departing trains to terminal platforms across major terminals (`NDLS`, `CNB`, `PRYJ`, `BSB`, `HWH`, `DBG`, `TPTY`).
+- **Clearance Conflict Engine**: Flags potential platform overlaps when two trains share the same platform within a 25-minute clearance window under dynamic ETA revisions.
+- **Turnaround Depot Scheduling**: Categorizes rake handover statuses (`ON_SCHEDULE`, `TIGHT_WINDOW`, `DELAYED_HANDOVER`) to assist pit-line cleaning and crew management.
+
+### 2. Passenger Information System (PIS) LED Board (`PassengerDisplayView.jsx`)
+- **Station Display Architecture**: High-contrast amber/yellow LED typography on dark-navy aesthetic matching physical Indian Railways station masthead displays.
+- **Blinking Arrival Indicators**: Visual pulse notifications for trains arriving within 10 minutes or experiencing platform alterations.
+- **Commuter Mobile Simulation**: High-fidelity phone-frame layout demonstrating how dynamic ETAs propagate to passenger smartphone apps (UTS/IRCTC Rail Connect).
+
+### 3. Zonal Aggregation & Downstream Corridor Slack (`AnalyticsView.jsx` & `StationTimeline.jsx`)
+- **Zonal Performance Grouping**: Aggregates sectional delays across all 16 Indian Railways zones (`NR`, `NCR`, `ECR`, `ER`, `WR`, `WCR`, `SCR`, etc.) with empirical recovery rates and zone-scaled MAE.
+- **Corridor Timetable Slack**: Dynamically calculates downstream dwell buffer minutes and scheduled sectional slack, estimating the exact minutes of delay a train is forecasted to recover before reaching its destination terminal.
+
+---
+
+## 6. View Navigation Architecture
+
+The frontend application provides seamless, state-preserved switching across five primary operational perspectives:
+- `control_room`: Pan-India fleet supervision and network GIS corridor map.
+- `tracking`: Single-train deep telemetry, station journey timeline, corridor slack breakdown, and disruption simulation triggers.
+- `station_ops`: Platform occupancy supervision, conflict detection, and turnaround depot monitoring.
+- `passenger_led`: Authentic station LED departure/arrival display with responsive mobile phone preview.
+- `analytics`: Model performance validation, XGBoost feature attribution, and zonal breakdown.
+

@@ -743,7 +743,7 @@ async def get_control_room_summary(db: AsyncSession = Depends(get_db)):
         curr_stn = state.current_station if state else (stops[0]["station_code"] if stops else "NDLS")
         next_stn = state.next_station if state else (stops[1]["station_code"] if len(stops) > 1 else "CNB")
         op_event = state.operational_event if state else "NORMAL_OPERATION"
-        d_source = state.data_source if state else "SIMULATION"
+        d_source = state.data_source if (state and state.data_source) else ("RAILRADAR_LIVE" if (provider and not provider.is_simulation) else "SIMULATION")
 
         # Delay status classification
         if del_min <= 5.0:

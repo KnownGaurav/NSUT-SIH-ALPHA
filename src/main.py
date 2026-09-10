@@ -37,8 +37,28 @@ async def register_simulator_trains():
         res = await session.execute(routes_stmt)
         routes = res.scalars().all()
 
-        initial_delays = {"12302": 12.0, "22436": 3.0, "12952": 38.0, "12301": 4.0}
-        initial_segments = {"12302": 1, "22436": 0, "12952": 1, "12301": 2}
+        initial_delays = {
+            "12302": 12.0,
+            "22436": 3.0,
+            "12952": 38.0,
+            "12301": 4.0,
+            "12565": 22.0,
+            "12708": 47.0,
+            "12002": 8.0,
+            "64454": 2.0,
+            "64534": 15.0,
+        }
+        initial_segments = {
+            "12302": 1,
+            "22436": 0,
+            "12952": 1,
+            "12301": 2,
+            "12565": 2,
+            "12708": 3,
+            "12002": 1,
+            "64454": 0,
+            "64534": 1,
+        }
 
         for r in routes:
             stops = []
@@ -102,10 +122,8 @@ async def lifespan(app: FastAPI):
     await register_simulator_trains()
     logger.info("Simulation engine loaded with active train route networks.")
 
-    # 4. Start background ticker if simulation mode is active
-    ticker_task = None
-    if settings.is_simulation:
-        ticker_task = asyncio.create_task(simulation_ticker_task())
+    # 4. Start background ticker so train positions advance along corridors and delays update dynamically
+    ticker_task = asyncio.create_task(simulation_ticker_task())
 
     yield
 

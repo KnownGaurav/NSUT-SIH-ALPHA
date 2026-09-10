@@ -257,7 +257,7 @@ export default function PassengerDisplayView({ onBackToDashboard, onOpenStationO
                     {soon && <span className="pis-soon-badge" style={{ opacity: blinkOn ? 1 : 0.3 }}>● ARRIVING</span>}
                   </div>
                   <div className={`pis-col pis-col-delay ${arr.delay_minutes <= 5 ? 'pis-delay-ok' : arr.delay_minutes <= 30 ? 'pis-delay-warn' : 'pis-delay-crit'}`}>
-                    {arr.delay_minutes <= 0 ? '0 min' : `+${Math.round(arr.delay_minutes)} min`}
+                    {arr.delay_minutes <= 0 ? '0 min' : `+${Number(arr.delay_minutes).toFixed(1)} min`}
                   </div>
                   <div className={`pis-col pis-col-pf ${conflict ? 'pis-pf-conflict' : 'pis-pf'}`}>
                     {arr.assigned_platform}
@@ -312,7 +312,7 @@ export default function PassengerDisplayView({ onBackToDashboard, onOpenStationO
                         <div>
                           <span className="pis-phone-tnum">{arr.train_number}</span>
                           <span className={`pis-phone-delay-pill ${arr.delay_minutes <= 5 ? 'green' : arr.delay_minutes <= 30 ? 'amber' : 'red'}`}>
-                            {arr.delay_minutes <= 0 ? 'On Time' : `+${Math.round(arr.delay_minutes)}m`}
+                            {arr.delay_minutes <= 0 ? 'On Time' : `+${Number(arr.delay_minutes).toFixed(1)}m`}
                           </span>
                         </div>
                         <span className={`pis-phone-status-badge ${arr.delay_status === 'on_time' ? 'status-ok' : arr.delay_status === 'moderate' ? 'status-mod' : 'status-severe'}`}>

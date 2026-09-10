@@ -166,6 +166,39 @@ async def ensure_train_ingested(train_number: str, db: AsyncSession) -> Train:
                 await db.commit()
                 logger.info(f"Successfully ingested train {train_number} with {seq_num - 1} stops.")
 
+                # Register train in simulator so it advances and modulates delays dynamically
+                try:
+                    from src.simulator.train_simulator import simulator
+                    sim_stops = []
+                    for h_idx, h_stop in enumerate(details.get("halts", [])):
+                        code = h_stop.get("stationCode", "")
+                        lat = float(h_stop.get("lat") or 0.0)
+                        lng = float(h_stop.get("lng") or 0.0)
+                        if not lat or not lng:
+                            if code in stn_coords_lookup:
+                                lat, lng = stn_coords_lookup[code]
+                        if lat and lng:
+                            sim_stops.append({
+                                "sequence": h_idx + 1,
+                                "station_code": code,
+                                "station_name": h_stop.get("stationName", code),
+                                "latitude": lat,
+                                "longitude": lng
+                            })
+                    if len(sim_stops) > 1:
+                        # Extract initial delay from live data or set realistic default
+                        curr_loc = live_data.get("currentLocation") or {} if live_data else {}
+                        init_del = float(live_data.get("delayMinutes") or curr_loc.get("delayMinutes") or 14.0) if live_data else 14.0
+                        simulator.register_train(
+                            train_number=train_number,
+                            stops=sim_stops,
+                            initial_delay=init_del,
+                            start_segment=1
+                        )
+                        logger.info(f"Registered dynamically ingested train {train_number} in simulation engine with initial delay {init_del}m.")
+                except Exception as sim_err:
+                    logger.warning(f"Could not register train {train_number} in simulator: {sim_err}")
+
                 # Re-fetch populated train
                 re_res = await db.execute(
                     select(Train)

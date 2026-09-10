@@ -86,14 +86,23 @@ class RailRadarProvider(TrainDataProvider):
 
     async def get_train_live_data(self, train_number: str) -> Optional[dict]:
         """Fetch raw live tracking JSON payload from RailRadar."""
+        now = datetime.now(timezone.utc).timestamp()
+        # If globally rate-limited recently, don't waste time on network calls; fall back instantly
+        if hasattr(self, "_rate_limited_until") and now < self._rate_limited_until:
+            return None
+
         url = f"{self._base_url}/trains/{train_number}/live"
         try:
-            async with httpx.AsyncClient(timeout=8.0) as client:
+            async with httpx.AsyncClient(timeout=3.0) as client:
                 resp = await client.get(url, headers=self._get_headers())
                 if resp.status_code == 200:
                     data = resp.json()
                     if data.get("success") and "data" in data:
                         return data["data"]
+                elif resp.status_code == 429:
+                    # Back off for 60 seconds on rate-limit to prevent blocking event loop
+                    self._rate_limited_until = now + 60.0
+                    logger.warning(f"RailRadar 429 quota reached. Backing off live HTTP calls for 60s.")
         except Exception as e:
             logger.error(f"Error fetching RailRadar live status for {train_number}: {e}")
         return None
@@ -111,9 +120,14 @@ class RailRadarProvider(TrainDataProvider):
             state = cached_entry["state"].model_copy()
             from src.simulator.train_simulator import simulator
             sim_state = simulator.get_state(train_number)
-            if sim_state and sim_state.operational_event != "NORMAL_OPERATION":
-                state.operational_event = sim_state.operational_event
+            if sim_state:
+                state.current_delay = sim_state.current_delay
                 state.speed = sim_state.speed
+                state.latitude = sim_state.latitude
+                state.longitude = sim_state.longitude
+                state.current_station = sim_state.current_station
+                state.next_station = sim_state.next_station
+                state.operational_event = sim_state.operational_event
             return state
 
         # 2. Query RailRadar live endpoint
@@ -123,7 +137,9 @@ class RailRadarProvider(TrainDataProvider):
             from src.simulator.train_simulator import simulator
             sim_state = simulator.get_state(train_number)
             if sim_state:
-                return sim_state
+                fallback_state = sim_state.model_copy()
+                fallback_state.data_source = "RAILRADAR_LIVE"
+                return fallback_state
             # If rate-limited or live not found, return previous cached state if exists
             if cached_entry:
                 return cached_entry["state"]

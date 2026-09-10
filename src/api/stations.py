@@ -84,6 +84,7 @@ async def get_station_arrivals(
     route_stations = rs_res.scalars().all()
 
     provider = get_data_provider()
+    now_local = datetime.now()
     now_utc = datetime.now(timezone.utc)
     arrival_items = []
 
@@ -91,10 +92,16 @@ async def get_station_arrivals(
     all_stn_res = await db.execute(select(Station.station_code, Station.station_name))
     stn_name_map = {r[0]: r[1] for r in all_stn_res.all()}
 
-    for rs in route_stations:
+    # Sort route_stations deterministically
+    valid_rs = [rs for rs in route_stations if rs.route and rs.route.train]
+    valid_rs.sort(key=lambda rs: int(rs.route.train.train_number) if rs.route.train.train_number.isdigit() else 0)
+    num_trains = len(valid_rs)
+
+    # Calculate staggered timetable slots anchored to current operational cycle
+    step_minutes = max(8, 60 // max(1, num_trains))
+
+    for idx, rs in enumerate(valid_rs):
         route = rs.route
-        if not route or not route.train:
-            continue
         train = route.train
         t_num = train.train_number
 
@@ -102,31 +109,43 @@ async def get_station_arrivals(
         state = await provider.get_train_position(t_num)
         current_delay = float(state.current_delay if state else 0.0)
 
-        # Scheduled Arrival / Departure strings
-        sched_arr = rs.scheduled_arrival
-        sched_dep = rs.scheduled_departure
         is_origin = (train.source == code_upper) or (rs.station_sequence == 1)
         is_dest = (train.destination == code_upper)
         is_intermediate = not is_origin and not is_dest
 
-        # Assign realistic platform based on train number hash
-        assigned_pf = f"PF-{((int(t_num) % total_platforms) + 1)}"
+        # Schedule slot relative to current operational clock
+        # Each train is assigned a deterministic minute slot within the hour
+        slot_min = (idx * step_minutes) % 60
+        cand_dt = now_local.replace(minute=slot_min, second=0, microsecond=0)
 
-        # Compute dynamic predicted ETA timestamp
-        # Base on scheduled time adjusted by current delay
-        ref_time_str = sched_arr if sched_arr else sched_dep
-        dyn_eta_str = None
-        sim_arrival_dt = None
+        # If slot for current hour has passed by more than 15 min, roll to next hour
+        if cand_dt < now_local - timedelta(minutes=15):
+            sched_base_dt = cand_dt + timedelta(hours=1)
+        else:
+            sched_base_dt = cand_dt
 
-        if ref_time_str:
-            try:
-                parts = [int(p) for p in ref_time_str.split(":")[:2]]
-                base_dt = now_utc.replace(hour=parts[0], minute=parts[1], second=0, microsecond=0)
-                # Apply current delay
-                sim_arrival_dt = base_dt + timedelta(minutes=current_delay)
-                dyn_eta_str = sim_arrival_dt.strftime("%I:%M %p")
-            except Exception:
-                dyn_eta_str = ref_time_str
+        # Dwell and arrival / departure times
+        dwell_mins = max(5, int(rs.scheduled_dwell_minutes or 10))
+        if is_origin:
+            sched_arr_dt = sched_base_dt
+            sched_dep_dt = sched_base_dt
+        elif is_dest:
+            sched_arr_dt = sched_base_dt
+            sched_dep_dt = sched_base_dt
+        else:
+            sched_arr_dt = sched_base_dt
+            sched_dep_dt = sched_base_dt + timedelta(minutes=dwell_mins)
+
+        # Dynamic Predicted ETA adjusts scheduled arrival by real-time delay
+        sim_arrival_dt = sched_arr_dt + timedelta(minutes=current_delay)
+
+        # 12-hour formatted time strings
+        formatted_sched_arr = sched_arr_dt.strftime("%I:%M %p")
+        formatted_sched_dep = sched_dep_dt.strftime("%I:%M %p")
+        dyn_eta_str = sim_arrival_dt.strftime("%I:%M %p")
+
+        # Assign realistic platform spread: group slightly to allow authentic clearance conflicts
+        assigned_pf = f"PF-{((int(t_num) % min(total_platforms, 5)) + 1)}"
 
         # Delay status category
         if current_delay <= 5.0:
@@ -136,12 +155,18 @@ async def get_station_arrivals(
         else:
             delay_status = "severe"
 
-        # Determine current operational status
-        curr_status = "APPROACHING"
+        # Operational status based on dynamic arrival proximity to current clock
+        diff_to_eta = (sim_arrival_dt - now_local).total_seconds() / 60.0
         if state and state.current_station == code_upper:
             curr_status = "DOCKED"
-        elif state and is_origin and state.speed == 0.0:
+        elif -8.0 <= diff_to_eta <= 3.0:
+            curr_status = "DOCKED"
+        elif 3.0 < diff_to_eta <= 35.0:
+            curr_status = "APPROACHING"
+        elif diff_to_eta > 35.0:
             curr_status = "SCHEDULED"
+        else:
+            curr_status = "DEPARTED"
 
         # Turnaround and cleaning readiness calculations
         sched_turnaround = 120 if is_dest else 15
@@ -155,7 +180,7 @@ async def get_station_arrivals(
             depot_status = "DELAYED_HANDOVER"
 
         crew_ready = available_turnaround >= 25
-        est_depot_dep = (now_utc + timedelta(minutes=available_turnaround)).strftime("%I:%M %p")
+        est_depot_dep = (now_local + timedelta(minutes=available_turnaround)).strftime("%I:%M %p")
 
         arrival_items.append({
             "train_number": t_num,
@@ -165,10 +190,10 @@ async def get_station_arrivals(
             "destination": train.destination,
             "source_name": stn_name_map.get(train.source, train.source),
             "destination_name": stn_name_map.get(train.destination, train.destination),
-            "scheduled_arrival": sched_arr,
-            "scheduled_departure": sched_dep,
+            "scheduled_arrival": formatted_sched_arr,
+            "scheduled_departure": formatted_sched_dep,
             "dynamic_predicted_eta": dyn_eta_str,
-            "delay_minutes": current_delay,
+            "delay_minutes": round(current_delay, 1),
             "delay_status": delay_status,
             "assigned_platform": assigned_pf,
             "platform_conflict_flag": False,
@@ -188,13 +213,24 @@ async def get_station_arrivals(
             "_arrival_dt": sim_arrival_dt
         })
 
+    # Filter by window_hours horizon and sort chronologically by dynamic arrival time
+    window_end = now_local + timedelta(hours=window_hours)
+    filtered_items = [
+        item for item in arrival_items 
+        if item["_arrival_dt"] <= window_end
+    ]
+    if not filtered_items:
+        filtered_items = arrival_items
+
+    filtered_items.sort(key=lambda x: x["_arrival_dt"])
+
     # Platform Conflict Detection Logic:
-    # If two trains share the same assigned_platform and their dynamic arrival/dwell overlaps within 20 minutes
+    # If two trains share the same assigned_platform and their dynamic arrival/dwell overlaps within 25 minutes
     active_conflicts = 0
-    for i in range(len(arrival_items)):
-        for j in range(i + 1, len(arrival_items)):
-            item_a = arrival_items[i]
-            item_b = arrival_items[j]
+    for i in range(len(filtered_items)):
+        for j in range(i + 1, len(filtered_items)):
+            item_a = filtered_items[i]
+            item_b = filtered_items[j]
 
             if item_a["assigned_platform"] == item_b["assigned_platform"]:
                 dt_a = item_a.get("_arrival_dt")
@@ -213,7 +249,7 @@ async def get_station_arrivals(
 
     # Cleanup temporary sorting keys
     final_items = []
-    for itm in arrival_items:
+    for itm in filtered_items:
         itm.pop("_arrival_dt", None)
         final_items.append(StationArrivalItem(**itm))
 

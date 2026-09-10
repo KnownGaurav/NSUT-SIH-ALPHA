@@ -338,7 +338,7 @@ export default function StationOperationsView({
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span className="stn-train-num">{train.train_number}</span>
                             <span className={`cr-delay-pill status-${train.delay_status === 'on_time' ? 'green' : train.delay_status === 'moderate' ? 'amber' : 'red'}`}>
-                              {train.delay_minutes <= 0 ? 'RT 0m' : `+${Math.round(train.delay_minutes)}m`}
+                              {train.delay_minutes <= 0 ? 'RT 0m' : `+${Number(train.delay_minutes).toFixed(1)}m`}
                             </span>
                           </div>
 
@@ -441,7 +441,7 @@ export default function StationOperationsView({
                       </td>
                       <td>
                         <span className={`cr-delay-pill status-${arr.delay_status === 'on_time' ? 'green' : arr.delay_status === 'moderate' ? 'amber' : 'red'}`}>
-                          {arr.delay_minutes <= 0 ? 'ON TIME' : `+${Math.round(arr.delay_minutes)} min`}
+                          {arr.delay_minutes <= 0 ? 'ON TIME' : `+${Number(arr.delay_minutes).toFixed(1)} min`}
                         </span>
                       </td>
                       <td>

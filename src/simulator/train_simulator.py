@@ -139,8 +139,9 @@ class RailwaySimulator:
 
             # 1. Update Delays based on active event
             if state.event == SimulationEvent.NORMAL_OPERATION:
-                # Small random variation ±0.1 min
-                pass
+                # Realistic continuous operational drift based on block section progression (±0.12 min per tick)
+                drift = math.sin(state.progress * math.pi * 6 + (hash(train_number) % 10)) * 0.12
+                state.delay = max(0.0, round(state.delay + drift, 1))
             elif state.event == SimulationEvent.SPEED_RESTRICTION:
                 state.delay += (delta_seconds / 60.0) * 0.75
             elif state.event == SimulationEvent.CONGESTION:
